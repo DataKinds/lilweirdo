@@ -1,0 +1,8 @@
+[project]
+name = "lilweirdo"
+version = "0.0.1"
+dependencies = [
+    "langchain",
+    "langchain_community",
+    "discord.py"
+]
