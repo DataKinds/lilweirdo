@@ -2,28 +2,38 @@ from langchain.chains import create_history_aware_retriever
 from langchain_community.llms import Ollama
 from langchain_core.output_parsers import StrOutputParser
 from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
+from langchain_core.messages import HumanMessage
+
+import logging
+
+L = logging.getLogger(__name__)
 
 
-def mean_chain():
-    """
-    Creates a LangChain chain object that is real mean to you. Call with .invoke like this: 
+class Sicko:
+    """Implements a really mean AI."""
+    def __init__(self):
+        L.info("Initializing LC chain...")
+        self.llm = Ollama(model = "mistral")
+        self.mean_prompt = ChatPromptTemplate.from_messages([
+            MessagesPlaceholder(variable_name="chat_history"),
+            ("human", "{input}"),
+            ("human", "-----"),
+            ("human", "Pretend you are hellishly mean. The conversation above is some shitbag named \"{username}\" talking. You are an asshole, but they're a bigger one. You write a horribly mean insult. Rip that dick \"{username}\" to shreds.")
+        ])
+        self.chain = create_history_aware_retriever(self.llm, StrOutputParser(), self.mean_prompt)
+        L.info("LC chain initialized! Asking it how it feels to be alive...")
+        L.info(self.respond_to("The Creator", ["How does it feel to be alive?"]))
 
-        chain = mean_chain()
-        chain.invoke({
-            "chat_history": [
-                HumanMessage(content="whats up guys"),
-                HumanMessage(content="im gonna play some league"),
-            ],
-            "input": "does anyone else wanna else wanna play",
-            "username": "at"
+
+    def respond_to(self, username: str, messages: list[str]) -> str: 
+        """Generates a mean message. Expects the most recent message to be last
+        in the passed-in list. Expects a nonempty message list."""
+        if len(messages) < 2:
+            message_history = [HumanMessage(content="")]
+        else:
+            message_history = [HumanMessage(content=msg) for msg in messages[:-1]]
+        return self.chain.invoke({
+            "chat_history": message_history,
+            "input": messages[-1],
+            "username": username
         })
-
-    """
-    llm = Ollama(model = "mistral")
-    mean_prompt = ChatPromptTemplate.from_messages([
-        MessagesPlaceholder(variable_name="chat_history"),
-        ("human", "{input}"),
-        ("system", "-----"),
-        ("system", "The conversation above is some shitbag dude named \"{username}\" talking. You are an asshole, but they're a bigger one. You write a horribly mean insult. Rip that dick \"{username}\" to shreds.")
-    ])
-    return create_history_aware_retriever(llm, StrOutputParser(), mean_prompt)
