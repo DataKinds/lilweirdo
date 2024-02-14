@@ -1,3 +1,7 @@
+[build-system]
+requires = ["hatchling>=1.21.0"]
+build-backend = "hatchling.build"
+
 [project]
 name = "lilweirdo"
 version = "0.0.1"
@@ -6,3 +10,27 @@ dependencies = [
     "langchain_community",
     "discord.py"
 ]
+
+[project.scripts]
+lilweirdo = "src.main:main"
+
+[tool.hatch.build.targets.sdist]
+packages = ["src/"]
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/"]
+
+[tool.isort]
+skip = ["env/"]
+
+
+# [tool.hatch.envs.default]
+# dependencies = [
+#     "isort"
+# ]
+# 
+# [tool.hatch.envs.default.scripts]
+# fmt = [
+#     "isort ."
+# ]
+# 
