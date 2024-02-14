@@ -54,10 +54,9 @@ class DiscordWeirdo(discord.Client):
         """Sends a mean responds to a user."""
         self.L.info("Responding!")
         async with message.channel.typing():
-            response = self.sicko.respond_to(message.author.name, self.pk.get_ai_ingestible(message.author.id))
+            response = await self.sicko.respond_to(message.author.name, self.pk.get_ai_ingestible(message.author.id))
             self.L.info(f"Generated mean response: {response}")
             await message.reply(response)
-
 
     async def on_ready(self):
         self.L.info(f"Loaded that mean ass bot named {self.user}")
@@ -70,9 +69,22 @@ class DiscordWeirdo(discord.Client):
         self.pk.process_message(message)
         preview = ' / '.join([msg.content for msg in self.pk.get_preview(message.author.id, 3)])
         self.L.info(f"Last 3/{self.pk.get_count(message.author.id)}/{self.pk.MESSAGE_HISTORY_LEN} messages: {preview}")
-        # only reply to 15% of messages
+        if message.reference:
+            # the message might be a reply!
+            if isinstance(message.reference.resolved, discord.Message):
+                # the message _is_ a reply that we can access
+                if message.reference.resolved.author.id == self.user.id:
+                    # it's a reply to us, we definitely respond
+                    await self.respond_to_message(message)
+                    return
+        if any([mentioned.id == self.user.id for mentioned in message.mentions]):
+            # the message pinged us
+            await self.respond_to_message(message)
+            return
+        # only reply to 15% of messages normally
         if random.random() < 0.15:
-            self.respond_to_message(message)
+            await self.respond_to_message(message)
+            return
 
 def main():
     logging.basicConfig(level=logging.INFO)

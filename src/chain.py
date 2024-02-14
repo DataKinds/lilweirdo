@@ -22,18 +22,21 @@ class Sicko:
         ])
         self.chain = create_history_aware_retriever(self.llm, StrOutputParser(), self.mean_prompt)
         L.info("LC chain initialized! Asking it how it feels to be alive...")
-        L.info(self.respond_to("The Creator", ["How does it feel to be alive?"]))
+        L.info(self.chain.invoke(self.__invoke_args("The Creator", ["How does it feel to be alive?"])))
 
 
-    def respond_to(self, username: str, messages: list[str]) -> str: 
-        """Generates a mean message. Expects the most recent message to be last
-        in the passed-in list. Expects a nonempty message list."""
+    def __invoke_args(self, username: str, messages: list[str]) -> str:
         if len(messages) < 2:
             message_history = [HumanMessage(content="")]
         else:
             message_history = [HumanMessage(content=msg) for msg in messages[:-1]]
-        return self.chain.invoke({
+        return {
             "chat_history": message_history,
             "input": messages[-1],
             "username": username
-        })
+        }
+
+    async def respond_to(self, username: str, messages: list[str]) -> str: 
+        """Generates a mean message. Expects the most recent message to be last
+        in the passed-in list. Expects a nonempty message list."""
+        return await self.chain.ainvoke(self.__invoke_args(username, messages))
