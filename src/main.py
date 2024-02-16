@@ -19,7 +19,7 @@ class DiscordWeirdo(discord.Client):
         super().__init__(*args, **kwargs)
         self.sickos = [
             # sicko.Sicko("llama2-uncensored", sicko.PeopleKeeper, sicko.LIL_WEIRDO),
-            # sicko.Sicko("llama2-uncensored", sicko.PeopleKeeper, sicko.LIL_WEIRDER)
+            sicko.Sicko("llama2-uncensored", sicko.PeopleKeeper, sicko.LIL_WEIRDER),
             sicko.Sicko("llama2-uncensored", sicko.ConvoKeeper, sicko.LIL_FREAK)
         ]
 
@@ -27,10 +27,15 @@ class DiscordWeirdo(discord.Client):
         """Sends a partciular sicko's response to a user."""
         self.L.info("Responding!")
         async with message.channel.typing():
-            for sicko in self.sickos:
-                response = await sicko.respond_to(message.author)
-                self.L.info(f"Generated mean response: {response}")
-                await message.reply(uwuify.uwu(response, flags=uwuify.SMILEY | uwuify.YU | uwuify.STUTTER))
+            sicko = random.choice(self.sickos)
+            response = await sicko.respond_to(message.author)
+            self.L.info(f"Generated mean response: {response}")
+            try:
+                uwu_response = uwuify.uwu(response, flags=uwuify.SMILEY | uwuify.YU | uwuify.STUTTER)
+            except IndexError:
+                # sometimes the uwu library fails lol
+                uwu_response = response
+            await message.reply(uwu_response)
 
     async def on_ready(self):
         self.L.info(f"Loaded that mean ass bot named {self.user}")

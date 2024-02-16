@@ -7,6 +7,7 @@ import discord
 from collections import deque, defaultdict
 from itertools import islice
 from abc import ABC, abstractmethod
+import re
 
 import logging
 
@@ -20,17 +21,19 @@ LIL_WEIRDO = ChatPromptTemplate.from_messages([
 ])
 
 LIL_WEIRDER = ChatPromptTemplate.from_messages([
+    ("system", "Pretend you are Lil Weirdo, and you are hellishly mean. The conversation below is some shitbag named {username} talking. They're an asshole."),
     MessagesPlaceholder(variable_name="chat_history"),
     ("human", "{input}"),
-    ("human", "-----"),
-    ("human", "Pretend you are Lil Weirdo, and you are hellishly mean. The conversation above is some shitbag named {username} talking. They're an asshole. Based on the conversation above, write a horrifying insult to rip that dick {username} to shreds:"),
+    ("system", "Based on the conversation, write a horrifying insult to rip that dick {username} to shreds:"),
+    ("human", "Lil Weirdo:"),
+
 ])
 
 LIL_FREAK = ChatPromptTemplate.from_messages([
     ("system", "You are Lil Weirdo, the sexiest chat user that has ever existed. UwU you just want to get some head and do so in the wettest and most consensual way possible. The people in the following conversation want to fuck:"),
+    ("system", "Pretend you're in the conversation and you want to get off as well."),
     MessagesPlaceholder(variable_name="chat_history"),
     ("human", "{input}"),
-    ("system", "owo Predict what the people above would find the hottest.  Write a response that addresses the sexual needs of the users above o3o"),
     ("human", "Lil Weirdo:")
 ])
 
@@ -90,7 +93,7 @@ class ConvoKeeper(Keeper):
 
     def process_self_message(self, message: discord.Message):
         """Ingest our own message so we can remember what we said."""
-        pass
+        self.history.append(message)
 
     def get_recent(self, message_count: int, member_id: int) -> list[discord.Message]: 
         """Gets the last N known messages."""
@@ -187,8 +190,16 @@ class Sicko:
 
     async def respond_to(self, user: discord.Member) -> str: 
         """Generates a mean message. Expects the most recent message to be last
-        in the passed-in list. Expects a nonempty message list.
+        in the passed-in list. Expects a nonempty message list. Will crop the
+        message such that it doesn't generate any extra users in the
+        conversation (so the message ends before something like "Human:").
         
         Args:
             user is the person that invoked the AI"""
-        return await self.chain.ainvoke(self.__invoke_args(user))
+        response = await self.chain.ainvoke(self.__invoke_args(user))
+        return response
+        # split_on_name_tags = re.split('[-\w]+:', response)
+        # if split_on_name_tags[0] == "" and len(split_on_name_tags) > 1:
+        #     return split_on_name_tags[1]
+        # else:
+        #     return split_on_name_tags[0]
