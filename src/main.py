@@ -13,7 +13,7 @@ L = logging.getLogger(__name__)
 
 class DiscordWeirdo(discord.Client):
     L = logging.getLogger("discord.weirdo")
-    MESSAGE_RESPONSE_RATE = 0.55
+    MESSAGE_RESPONSE_RATE = 0.05
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -24,32 +24,35 @@ class DiscordWeirdo(discord.Client):
         ]
 
     async def respond_to_message(self, message: discord.Message): 
-        """Sends a partciular sicko's response to a user."""
+        """Sends a random sicko's response to a user, and record that sent
+        message in that sicko's memory."""
         self.L.info("Responding!")
         async with message.channel.typing():
             sicko = random.choice(self.sickos)
             response = await sicko.respond_to(message.author)
             self.L.info(f"Generated mean response: {response}")
             try:
-                uwu_response = uwuify.uwu(response, flags=uwuify.SMILEY | uwuify.YU | uwuify.STUTTER)
+                # uwu_response = uwuify.uwu(response, flags=uwuify.SMILEY | uwuify.YU | uwuify.STUTTER)
+                # TODO: the non-uwuified version has to be the one that we feed into its memory
+                uwu_response = response
             except IndexError:
                 # sometimes the uwu library fails lol
                 uwu_response = response
-            await message.reply(uwu_response)
+            sent_message = await message.reply(uwu_response)
+            self.L.info(f"Ingesting message event from ourselves...")
+            sicko.keeper.process_self_message(sent_message)
 
     async def on_ready(self):
         self.L.info(f"Loaded that mean ass bot named {self.user}")
 
     async def on_message(self, message: discord.Message):
         if message.author.id == self.user.id:
-            self.L.info(f"Ingesting message event from ourselves...")
-            for sicko in self.sickos:
-                sicko.keeper.process_self_message(message)
+            self.L.info(f"Skipping our own message in on_message...")
             return
         self.L.info(f"Got message from {message.author.id}/{message.author}, sending to {len(self.sickos)} sickos")
         for sicko in self.sickos:
             sicko.keeper.process_message(message)
-            preview = ' / '.join([msg.content for msg in sicko.keeper.get_recent(message.author.id, 3)])
+            preview = ' / '.join([msg.content for msg in sicko.keeper.get_recent(3, message.author.id)])
             self.L.info(f"Last 3/{sicko.keeper.get_count(message.author.id)}/{sicko.keeper.MESSAGE_HISTORY_LEN} messages: {preview}")
         if message.reference:
             # the message might be a reply!
