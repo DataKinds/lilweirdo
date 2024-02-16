@@ -9,7 +9,8 @@ dependencies = [
     "langchain",
     "langchain_community",
     "discord.py",
-    "python-dotenv"
+    "python-dotenv",
+    "uwuify"
 ]
 
 [project.scripts]
