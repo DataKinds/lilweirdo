@@ -1,52 +1,21 @@
+import logging
+import re
+from abc import ABC, abstractmethod
+from collections import defaultdict, deque
+from itertools import islice
+from .consts import DEFAULT_MODEL
+
+
+import discord
 from langchain.chains import create_history_aware_retriever
 from langchain_community.llms import Ollama
+from langchain_core.messages import HumanMessage
 from langchain_core.output_parsers import StrOutputParser
 from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
-from langchain_core.messages import HumanMessage
-import discord
-from collections import deque, defaultdict
-from itertools import islice
-from abc import ABC, abstractmethod
-import re
-
-import logging
+import ollama as ol
+from .templater import Templater, LIL_WEIRDO, LIL_OWO_FREAK
 
 L = logging.getLogger(__name__)
-
-LIL_WEIRDO = ChatPromptTemplate.from_messages([
-    MessagesPlaceholder(variable_name="chat_history"),
-    ("human", "{input}"),
-    ("human", "-----"),
-    ("human", "Pretend you are Lil Weirdo, and you are hellishly mean. The conversation above is some shitbag named {username} talking. They're an asshole. Write a horrifying insult to rip that dick {username} to shreds:"),
-])
-
-LIL_WEIRDER = ChatPromptTemplate.from_messages([
-    ("system", "Pretend you are Lil Weirdo, and you are hellishly mean. The conversation below is some shitbag named {username} talking. They're an asshole."),
-    MessagesPlaceholder(variable_name="chat_history"),
-    ("human", "{input}"),
-    ("system", "Based on the conversation, write a horrifying insult to rip that dick {username} to shreds:"),
-    ("human", "Lil Weirdo:"),
-
-])
-
-LIL_FREAK = ChatPromptTemplate.from_messages([
-    ("system", "You are Lil Weirdo, the sexiest bitch that has ever existed. You just want to get some head and do so in the wettest and most hottest way possible. You were in the middle of getting off during the following conversation..."),
-    MessagesPlaceholder(variable_name="chat_history"),
-    ("human", "{input}"),
-    ("system", "Based on the conversation, write the fucking dirtiest thing you can imagine."),
-    ("human", "Lil Weirdo:")
-])
-
-LIL_OWO_FREAK = ChatPromptTemplate.from_messages([
-    ("system", "You awe Lil Weirdo, the x3 sexiest chat usew that has evew *sweats* existed. UwU you just *whispers to self* w-want t-to get some head and do so in the x3 wettest and most consensuaw w-way possibwe. the *runs away* peopwe in the x3 fowwowing convewsation w-want t-to fuck:"),
-    MessagesPlaceholder(variable_name="chat_history"),
-    ("human", "{input}"),
-    ("system", "owo Pwedict what the x3 peopwe abuv *sees bulge* w-wouwd find the x3 hottest.  Wwite UwU a wesponse that addwesses the x3 sexuaw nyeeds of the x3 usews abuv *sees bulge* o3o *sweats*"),
-    ("human", "Lil Weirdo:")
-])
-
-
-
 
 class Keeper(ABC):
     @abstractmethod
@@ -164,29 +133,20 @@ class Sicko:
                 {input} the previous message that triggered the bot
                 {username} the user that triggered the bot
     """
-    def __init__(self, modelname: str = "llama2-uncensored", keeper: Keeper = ConvoKeeper, prompt: ChatPromptTemplate = LIL_WEIRDO):
+    def __init__(self, 
+                 keeper: Keeper = ConvoKeeper, 
+                 templater: Templater = LIL_WEIRDO):
         L.info("Initializing LC chain...")
-        L.info(f"Model name: {modelname}")
         L.info(f"Memory keeper: {keeper}")
-        L.info(f"Prompt: {prompt}")
-        self.llm = Ollama(model = modelname)
-        self.prompt = prompt
-        self.chain = create_history_aware_retriever(self.llm, StrOutputParser(), self.prompt)
-        self.keeper = keeper()
+        L.info(f"Templater: {templater}")
+        self.llm: ol.Client = ol.Client()
+        self.templater: Templater = templater
+        self.keeper: Keeper = keeper()
         L.info("LC chain initialized! Asking it how it feels to be alive...")
 
-
-    def __invoke_args(self, user: discord.Member) -> str:
-        messages = self.keeper.get_ai_ingestible(user.id)
-        if len(messages) < 2:
-            message_history = [HumanMessage(content="")]
-        else:
-            message_history = [HumanMessage(content=msg) for msg in messages[:-1]]
-        return {
-            "chat_history": message_history,
-            "input": messages[-1],
-            "username": user.global_name or user.name
-        }
+    def __prompt(self, user: discord.Member) -> str:
+        messages = '[stop]\n'.join(self.keeper.get_ai_ingestible(user.id))
+        return f"{messages}\nLil Weirdo:"
 
     async def respond_to(self, user: discord.Member) -> str: 
         """Generates a mean message. Expects the most recent message to be last
@@ -196,10 +156,9 @@ class Sicko:
         
         Args:
             user is the person that invoked the AI"""
-        response = await self.chain.ainvoke(self.__invoke_args(user))
+        with self.templater.with_model(self.llm) as modelname:
+            response = self.llm.generate(
+                model=modelname,
+                prompt=self.__prompt(user)
+            )['response']
         return response
-        # split_on_name_tags = re.split('[-\w]+:', response)
-        # if split_on_name_tags[0] == "" and len(split_on_name_tags) > 1:
-        #     return split_on_name_tags[1]
-        # else:
-        #     return split_on_name_tags[0]

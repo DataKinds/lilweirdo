@@ -10,8 +10,12 @@ dependencies = [
     "langchain_community",
     "discord.py",
     "python-dotenv",
-    "uwuify"
+    "uwuify",
+    "ollama"
 ]
+
+[project.optional-dependencies]
+dev = ["isort", "mypy"]
 
 [project.scripts]
 lilweirdo = "src.main:main"

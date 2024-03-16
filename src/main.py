@@ -1,12 +1,13 @@
 import logging
 import os
+import random
 
 import discord
+import uwuify
 from dotenv import load_dotenv
 from langchain_core.messages import HumanMessage
-import random
+
 from . import sicko
-import uwuify
 
 L = logging.getLogger(__name__)
 
@@ -18,9 +19,9 @@ class DiscordWeirdo(discord.Client):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.sickos = [
-            # sicko.Sicko("llama2-uncensored", sicko.PeopleKeeper, sicko.LIL_WEIRDO),
-            sicko.Sicko("llama2-uncensored", sicko.PeopleKeeper, sicko.LIL_WEIRDER),
-            sicko.Sicko("llama2-uncensored", sicko.ConvoKeeper, sicko.LIL_FREAK)
+            sicko.Sicko(sicko.PeopleKeeper, sicko.LIL_WEIRDO),
+            # sicko.Sicko("llama2-uncensored", sicko.PeopleKeeper, sicko.LIL_WEIRDER),
+            # sicko.Sicko("llama2-uncensored", sicko.ConvoKeeper, sicko.LIL_FREAK)
         ]
 
     async def respond_to_message(self, message: discord.Message): 
