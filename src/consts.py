@@ -1,1 +1,2 @@
-DEFAULT_MODEL = "llama2-uncensored"
+DEFAULT_MODEL = "mistral"
+STOP_TOKENS = ["[stop]", "[/INST]", "[INST]", "[MSG]", "[/MSG]"]

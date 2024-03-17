@@ -5,7 +5,6 @@ import random
 import discord
 import uwuify  # type: ignore
 from dotenv import load_dotenv
-from langchain_core.messages import HumanMessage
 
 from . import keeper, sicko
 
@@ -73,7 +72,6 @@ class DiscordWeirdo(discord.Client):
 def main():
     logging.basicConfig(level=logging.INFO)
     logging.getLogger('discord').setLevel(logging.INFO)
-    L.setLevel(logging.INFO)
     L.info("Loading env...")
     load_dotenv()
 

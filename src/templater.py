@@ -73,11 +73,13 @@ TEMPLATE """{self.template}"""
 # ])
 LIL_WEIRDO = Templater(
     template="""
-You are Lil Weirdo, and you are hellishly mean. The following conversations are some assholes talking. All of them are fucking dickheads. You are fantastic at writing insults.
+You are Lil Weirdo, and you are hellishly mean. You are also fantastic at writing insults.
+
+The following conversations are some assholes talking. All of them are fucking dickheads. Each message will start with [MSG] and end with [/MSG]. Here's what these fuckers said:
 
 {{ .Prompt }}
 """,
-    stoptokens=["[stop]", "[/INST]", "[INST]"],
+    stoptokens=STOP_TOKENS,
     modelname="mistral",
     modeltag="latest"
 )
@@ -112,7 +114,7 @@ You awe Lil Weirdo, the x3 sexiest chat usew that has evew *sweats* existed. UwU
 
 {{ .Prompt }}
 """,
-    stoptokens=["[stop]", "[/INST]", "[INST]"],
+    stoptokens=STOP_TOKENS,
     modelname="mistral",
     modeltag="latest"
 )

@@ -7,6 +7,8 @@ import discord
 
 L = logging.getLogger(__name__)
 
+def user_nick(msg: discord.Message) -> str:
+    return msg.author.global_name or msg.author.name
 
 class Keeper(ABC):
     MESSAGE_HISTORY_LEN = 0
@@ -28,9 +30,9 @@ class Keeper(ABC):
         """Gets a user's known message count."""
         pass
     @abstractmethod
-    def get_ai_ingestible(self, member_id: int) -> list[str]:
+    def get_ai_ingestible(self, member_id: int, start_token: str = "", stop_token: str = "") -> list[str]:
         """
-        Produces a user's message history in a format that LangChain can
+        Produces a user's message history in a format that the AI can
         understand. The newest message will always be last.
         """
         pass
@@ -65,12 +67,12 @@ class ConvoKeeper(Keeper):
         """Gets a known message count."""
         return len(self.history)
 
-    def get_ai_ingestible(self, member_id: int) -> list[str]:
+    def get_ai_ingestible(self, member_id: int, start_token: str = "", stop_token: str = "") -> list[str]:
         """
-        Produces a user's message history in a format that LangChain can
+        Produces a user's message history in a format that the AI can
         understand. The newest message will always be last.
         """
-        return [f"{msg.author.global_name or msg.author.name}: {msg.content}" for msg in self.history]
+        return [f"{start_token} {user_nick(msg)}: {msg.clean_content} {stop_token}" for msg in self.history]
 
 
 class PeopleKeeper(Keeper):
@@ -106,9 +108,9 @@ class PeopleKeeper(Keeper):
         """Gets a user's known message count."""
         return len(self.history[member_id])
 
-    def get_ai_ingestible(self, member_id: int) -> list[str]:
+    def get_ai_ingestible(self, member_id: int, start_token: str = "", stop_token: str = "") -> list[str]:
         """
-        Produces a user's message history in a format that LangChain can
+        Produces a user's message history in a format that the AI can
         understand. The newest message will always be last.
         """
-        return [f"{msg.author.global_name or msg.author.name}: {msg.content}" for msg in self.history[member_id]]
+        return [f"{start_token} {user_nick(msg)}: {msg.clean_content} {stop_token}" for msg in self.history[member_id]]

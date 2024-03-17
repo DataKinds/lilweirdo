@@ -7,11 +7,6 @@ from typing import Type
 
 import discord
 import ollama as ol  # type: ignore
-from langchain.chains import create_history_aware_retriever
-from langchain_community.llms import Ollama
-from langchain_core.messages import HumanMessage
-from langchain_core.output_parsers import StrOutputParser
-from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
 
 from .consts import DEFAULT_MODEL
 from .keeper import ConvoKeeper, Keeper
@@ -23,12 +18,9 @@ class Sicko:
     """Implements a really mean AI.
     
     Args:
-        modelname: What Ollama model should we load?
-        prompt: LangChain prompt fed into the Sicko AI. Expects to have 3
-            variables:
-                (MessagesPlaceholder(variable_name="chat_history")) where the memory of the bot is fed into
-                {input} the previous message that triggered the bot
-                {username} the user that triggered the bot
+        keeper: A Keeper class to initialize, serving as the memory of the AI.
+        templater: A Templater, which controls the prompt template, stop 
+            tokens, choice of model, and other options.
     """
     def __init__(self, 
                  keeper: Type[Keeper] = ConvoKeeper, 
@@ -39,11 +31,25 @@ class Sicko:
         self.llm: ol.Client = ol.Client()
         self.templater: Templater = templater
         self.keeper: Keeper = keeper()
+        self.starttok = "[MSG]"
+        self.stoptok = "[/MSG]"
         L.info("LC chain initialized! Asking it how it feels to be alive...")
+        L.info(self.__generate(f"{self.starttok} God: How does it feel to be alive? {self.stoptok}\n{self.starttok} Lil Weirdo:"))
 
     def __prompt(self, user: discord.Member | discord.User) -> str:
-        messages = '[stop]\n'.join(self.keeper.get_ai_ingestible(user.id))
-        return f"{messages}\nLil Weirdo:"
+        messages = '\n'.join(self.keeper.get_ai_ingestible(user.id, self.starttok, self.stoptok))
+        prompt = f"{messages}\n{self.starttok} Lil Weirdo:"
+        L.info(f"Generated prompt: {prompt}")
+        return prompt
+
+    def __generate(self, prompt: str) -> str:
+        with self.templater.with_model(self.llm) as modelname:
+            response = self.llm.generate(
+                model=modelname,
+                prompt=prompt
+            )['response']
+            L.info(f"Generated response: {response}")
+            return response
 
     async def respond_to(self, user: discord.Member | discord.User) -> str: 
         """Generates a mean message. Expects the most recent message to be last
@@ -53,9 +59,4 @@ class Sicko:
         
         Args:
             user is the person that invoked the AI"""
-        with self.templater.with_model(self.llm) as modelname:
-            response = self.llm.generate(
-                model=modelname,
-                prompt=self.__prompt(user)
-            )['response']
-        return response
+        return self.__generate(self.__prompt(user))
