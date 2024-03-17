@@ -1,34 +1,40 @@
 import logging
 import os
 import random
+import re
 
 import discord
 import uwuify  # type: ignore
 from dotenv import load_dotenv
 
-from . import keeper, sicko
+from . import consts, keeper, sicko, templater
 
 L = logging.getLogger(__name__)
 
 class DiscordWeirdo(discord.Client):
-    MESSAGE_RESPONSE_RATE = 0.05
-
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.sickos = [
-            sicko.Sicko(keeper.PeopleKeeper, sicko.LIL_WEIRDO),
-            # sicko.Sicko("llama2-uncensored", sicko.PeopleKeeper, sicko.LIL_WEIRDER),
-            # sicko.Sicko("llama2-uncensored", sicko.ConvoKeeper, sicko.LIL_FREAK)
-        ]
+        self.sickos: dict[str, sicko.Sicko] = {
+            "weirdo": sicko.Sicko(keeper.PeopleKeeper, templater.LIL_WEIRDO),
+            "freak": sicko.Sicko(keeper.ConvoKeeper, templater.LIL_FREAK),
+            "uwu": sicko.Sicko(keeper.ConvoKeeper, templater.LIL_OWO_FREAK),
+        }
+        self.response_rate: float = consts.DEFAULT_RESPONSE_RATE
+        self.current_sicko: str | None = None
+        self.tree = discord.app_commands.CommandTree(self)
 
     async def respond_to_message(self, message: discord.Message): 
         """Sends a random sicko's response to a user, and record that sent
         message in that sicko's memory."""
-        L.info("Responding!")
+        responder: sicko.Sicko
+        if self.current_sicko is None:
+            responder = random.choice(list(self.sickos.values()))
+        else:
+            responder = self.sickos[self.current_sicko]
+        L.info(f"Responding! Current sicko is {self.current_sicko}, responding with {responder}...")
         async with message.channel.typing():
-            sicko = random.choice(self.sickos)
-            response = await sicko.respond_to(message.author)
-            L.info(f"Generated mean response: {response}")
+            response = await responder.respond_to(message.author)
+            L.info(f"Generated response: {response}")
             try:
                 # uwu_response = uwuify.uwu(response, flags=uwuify.SMILEY | uwuify.YU | uwuify.STUTTER)
                 # TODO: the non-uwuified version has to be the one that we feed into its memory
@@ -38,17 +44,71 @@ class DiscordWeirdo(discord.Client):
                 uwu_response = response
             sent_message = await message.reply(uwu_response)
             L.info(f"Ingesting message event from ourselves...")
-            sicko.keeper.process_self_message(sent_message)
+            responder.keeper.process_self_message(sent_message)
 
     async def on_ready(self):
         L.info(f"Loaded that mean ass bot named {self.user}")
+
+    async def slash_message(self, message: discord.Message) -> None:
+        command, *rest = re.split(r"\s+", message.content)
+        match command:
+            case "/help":
+                await message.reply(consts.HELP_MESSAGE)
+            case "/amnesia":
+                L.info("Clearing memory...")
+                for sicko in self.sickos.values():
+                    sicko.keeper = sicko.keeper.__class__()
+                await message.reply("Uhhh I forgor >:3")
+            case "/responserate":
+                try:
+                    rate = float(rest[0])
+                    assert 0 <= rate <= 1
+                    self.response_rate = rate
+                    await message.reply(f"Set response rate to {rate}")
+                except (IndexError, ValueError, AssertionError) as e:
+                    await message.reply(consts.RESPONSE_RATE_HELP_MESSAGE)
+            case "/sicko":
+                def sicko_list():
+                    l = [f"`{sicko}`" for sicko in self.sickos.keys()]
+                    return ", ".join(l) 
+                try:
+                    subcommand, *rest = rest
+                    match subcommand:
+                        case "current":
+                            if self.current_sicko is None:
+                                await message.reply("Currently set to shuffle all sickos each reply.")
+                            else:
+                                await message.reply(f"The sicko that's replying to you is `{self.current_sicko}`.")
+                        case "shuffle":
+                            self.current_sicko = None
+                            await message.reply("Shuffling sickos.")
+                        case "list":
+                            await message.reply(f"Currently available sickos: {sicko_list()}")
+                        case "set":
+                            newsicko = rest[0]
+                            if newsicko not in self.sickos.keys():
+                                await message.reply(f"Sicko `{newsicko}` not available.\nCurrently available sickos: {sicko_list()}")
+                                return
+                            self.current_sicko = newsicko
+                            await message.reply(f"Switched to `{newsicko}`.")
+                        case _:
+                            await message.reply(consts.SICKO_HELP_MESSAGE)
+                except (ValueError, IndexError) as e:
+                    L.debug("Failed slash command", e)
+                    await message.reply(consts.SICKO_HELP_MESSAGE)
+            case _:
+                await message.reply(consts.HELP_MESSAGE)
 
     async def on_message(self, message: discord.Message):
         if message.author.id == self.user.id: # type: ignore
             L.info(f"Skipping our own message in on_message...")
             return
+        if message.content.startswith("/"):
+            L.info(f"Got slash command, forwarding to command processor...")
+            await self.slash_message(message)
+            return
         L.info(f"Got message from {message.author.id}/{message.author}, sending to {len(self.sickos)} sickos")
-        for sicko in self.sickos:
+        for sicko in self.sickos.values():
             sicko.keeper.process_message(message)
             preview = ' / '.join([msg.content for msg in sicko.keeper.get_recent(3, message.author.id)])
             L.info(f"Last 3/{sicko.keeper.get_count(message.author.id)}/{sicko.keeper.MESSAGE_HISTORY_LEN} messages: {preview}")
@@ -64,8 +124,8 @@ class DiscordWeirdo(discord.Client):
             # the message pinged us
             await self.respond_to_message(message)
             return
-        # only reply to 15% of messages normally
-        if random.random() < self.MESSAGE_RESPONSE_RATE:
+        # only reply to some percentage of messages normally
+        if random.random() < self.response_rate:
             await self.respond_to_message(message)
             return
 

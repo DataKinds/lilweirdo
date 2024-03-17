@@ -10,7 +10,7 @@ import ollama as ol  # type: ignore
 
 from .consts import DEFAULT_MODEL
 from .keeper import ConvoKeeper, Keeper
-from .templater import LIL_OWO_FREAK, LIL_WEIRDO, Templater
+from .templater import LIL_WEIRDO, Templater
 
 L = logging.getLogger(__name__)
 
