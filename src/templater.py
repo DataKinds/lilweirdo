@@ -1,8 +1,10 @@
-from typing import Optional
-import ollama as ol
-from uuid import uuid4
-from .consts import *
 from contextlib import contextmanager
+from typing import Optional
+from uuid import uuid4
+
+import ollama as ol  # type: ignore
+
+from .consts import *
 
 
 class Templater:

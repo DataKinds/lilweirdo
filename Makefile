@@ -2,3 +2,4 @@
 
 fmt:
 	-isort .
+	-mypy . --check-untyped-defs
