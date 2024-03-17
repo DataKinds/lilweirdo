@@ -2,4 +2,5 @@
 
 fmt:
 	-isort .
+	-ruff --fix .
 	-mypy . --check-untyped-defs

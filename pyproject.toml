@@ -13,7 +13,7 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
-dev = ["isort", "mypy"]
+dev = ["isort", "mypy", "ruff"]
 
 [project.scripts]
 lilweirdo = "src.main:main"

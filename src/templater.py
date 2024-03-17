@@ -4,7 +4,7 @@ from uuid import uuid4
 
 import ollama as ol  # type: ignore
 
-from .consts import *
+from . import consts as c
 
 
 class Templater:
@@ -37,7 +37,7 @@ class Templater:
     def __init__(self,
                  template: str = "",
                  stoptokens: list[str] = [],
-                 modelname: str = DEFAULT_MODEL,
+                 modelname: str = c.DEFAULT_MODEL,
                  modeltag: str = "latest"):
         self.template = template
         self.stoptokens = stoptokens
@@ -57,12 +57,20 @@ TEMPLATE """{self.template}"""
 
     @contextmanager
     def with_model(self, ollamaclient: Optional[ol.Client] = None):
+        """Generates a one-off model in Ollama with all the settings 
+        applied from this templater."""
         oc = ol.Client() if ollamaclient is None else ollamaclient
         newmodelname = str(uuid4())
         oc.create(model=newmodelname,
                   modelfile=self.modelfile)
         yield newmodelname
         oc.delete(newmodelname)
+
+    def generate(self, prompt: str, ollamaclient: Optional[ol.Client] = None):
+        """Generates a one-off completion given a prompt value."""
+        oc = ol.Client() if ollamaclient is None else ollamaclient
+        with self.with_model(oc) as modelname:
+            return oc.generate(model=modelname, prompt=prompt)['response']
 
 LIL_WEIRDO = Templater(
     template="""
@@ -72,7 +80,7 @@ The following conversations are some assholes talking. All of them are fucking d
 
 {{ .Prompt }}
 """,
-    stoptokens=STOP_TOKENS,
+    stoptokens=c.STOP_TOKENS,
     modelname="mistral",
     modeltag="latest"
 )
@@ -85,7 +93,7 @@ You were in the middle of getting off when the following conversation happened. 
 
 {{ .Prompt }}
 """,
-    stoptokens=STOP_TOKENS,
+    stoptokens=c.STOP_TOKENS,
     modelname="mistral",
     modeltag="latest"
 )
@@ -105,8 +113,74 @@ You awe Lil Weirdo, the x3 sexiest chat usew that has evew *sweats* existed. (â—
 
 {{ .Prompt }}
 """,
-    stoptokens=STOP_TOKENS,
+    stoptokens=c.STOP_TOKENS,
     modelname="mistral",
     modeltag="latest"
 )
 
+
+CHEEVOS_FROM = Templater(
+    template="""
+This is a list of video game achievements. Each list of achievements begins with [MSG] and ends with [/MSG].
+
+Achievements from The Binding of Isaac:
+[MSG]
+* Monstro's Tooth
+    * Beat Chapter 1
+* Lil Chubby
+    * Beat Chapter 2
+* Loki's Horns
+    * Beat Chapter 3
+* Something From The Future
+    * Beat The Basement 40 times
+* Something Sticky
+    * Beat Chapter 2 30 times
+* Something Cute
+    * Beat Chapter 3 20 times
+* A Bandage
+    * Make a Super Bandage Girl by picking up 4 copies of Ball of Bandages in one run; see Unlocking Super Meat Boy & Super Bandage Girl
+* A Cross
+    * Defeat Isaac as Magdalene.
+* A Bag of Pennies
+    * Defeat Isaac as Cain.
+[/MSG]
+
+Achievements from Risk of Rain 2:
+[MSG]
+* True Respite
+    * Obliterate yourself at the Obelisk..
+* Learning Process
+    * Die 5 times.
+* The Lone Survivor
+    * Stay alive for 30 consecutive minutes.
+* I Love Dying!
+    * Die 20 times.
+* Warm For Life
+    * Die three times while burning.
+* Huntress: Finishing Touch
+    * As Huntress, land a killing blow with every possible hit of a single glaive.
+* Artificer: Massacre
+    * As Artificer, perform a multikill of 20 enemies.
+* MUL-T: Gotcha!
+    * As MUL-T, land the killing blow on an Imp Overlord with the Preon Accumulator.
+* Commando: Rolling Thunder
+    * As Commando, land the killing blow on an Overloading Worm
+* Acrid: Bad Medicine:
+    * As Acrid, land the final blow on a Scavenger.
+* Keyed Up
+    * Defeat the Teleporter boss under 15 seconds
+* Slaughter
+    * Defeat 3000 enemies.
+* Cut Down
+    * Defeat 500 elite monsters.
+* Ascendant
+    * Defeat the Teleporter bosses after activating 2 Shrines of the Mountain.
+[/MSG]
+
+Achievements from {{ .Prompt }}:
+[MSG]
+""",
+    stoptokens=c.STOP_TOKENS,
+    modelname="mistral",
+    modeltag="latest"
+)

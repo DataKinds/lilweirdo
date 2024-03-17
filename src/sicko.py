@@ -1,14 +1,9 @@
 import logging
-import re
-from abc import ABC, abstractmethod
-from collections import defaultdict, deque
-from itertools import islice
 from typing import Type
 
 import discord
 import ollama as ol  # type: ignore
 
-from .consts import DEFAULT_MODEL
 from .keeper import ConvoKeeper, Keeper
 from .templater import LIL_WEIRDO, Templater
 

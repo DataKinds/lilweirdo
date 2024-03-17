@@ -4,7 +4,6 @@ import random
 import re
 
 import discord
-import uwuify  # type: ignore
 from dotenv import load_dotenv
 
 from . import consts, keeper, sicko, templater
@@ -21,7 +20,8 @@ class DiscordWeirdo(discord.Client):
         }
         self.response_rate: float = consts.DEFAULT_RESPONSE_RATE
         self.current_sicko: str | None = None
-        self.tree = discord.app_commands.CommandTree(self)
+        # self.tree = discord.app_commands.CommandTree(self)
+        self.command_prefix: str = consts.DEFAULT_COMMAND_PREFIX
 
     async def respond_to_message(self, message: discord.Message): 
         """Sends a random sicko's response to a user, and record that sent
@@ -43,13 +43,14 @@ class DiscordWeirdo(discord.Client):
                 # sometimes the uwu library fails lol
                 uwu_response = response
             sent_message = await message.reply(uwu_response)
-            L.info(f"Ingesting message event from ourselves...")
+            L.info("Ingesting message event from ourselves...")
             responder.keeper.process_self_message(sent_message)
 
     async def on_ready(self):
         L.info(f"Loaded that mean ass bot named {self.user}")
 
-    async def slash_message(self, message: discord.Message) -> None:
+    async def command_message(self, message: discord.Message) -> None:
+        """Handles internal bot commands which start with `self.command_prefix`"""
         command, *rest = re.split(r"\s+", message.content)
         match command:
             case "/help":
@@ -65,12 +66,11 @@ class DiscordWeirdo(discord.Client):
                     assert 0 <= rate <= 1
                     self.response_rate = rate
                     await message.reply(f"Set response rate to {rate}")
-                except (IndexError, ValueError, AssertionError) as e:
+                except (IndexError, ValueError, AssertionError):
                     await message.reply(consts.RESPONSE_RATE_HELP_MESSAGE)
             case "/sicko":
                 def sicko_list():
-                    l = [f"`{sicko}`" for sicko in self.sickos.keys()]
-                    return ", ".join(l) 
+                    return ", ".join([f"`{sicko}`" for sicko in self.sickos.keys()]) 
                 try:
                     subcommand, *rest = rest
                     match subcommand:
@@ -96,22 +96,30 @@ class DiscordWeirdo(discord.Client):
                 except (ValueError, IndexError) as e:
                     L.debug("Failed slash command", e)
                     await message.reply(consts.SICKO_HELP_MESSAGE)
+            case "/~cheevosfrom":
+                if len(rest) == 0:
+                    await message.reply(consts.HELP_MESSAGE)
+                    return
+                game_title = message.content.removeprefix("/~cheevosfrom ")
+                response = templater.CHEEVOS_FROM.generate(game_title)
+                await message.reply(f"""Achievements from {game_title}: 
+{response}""")
             case _:
                 await message.reply(consts.HELP_MESSAGE)
 
     async def on_message(self, message: discord.Message):
         if message.author.id == self.user.id: # type: ignore
-            L.info(f"Skipping our own message in on_message...")
+            L.info("Skipping our own message in on_message...")
             return
         if message.content.startswith("/"):
-            L.info(f"Got slash command, forwarding to command processor...")
-            await self.slash_message(message)
+            L.info("Got slash command, forwarding to command processor...")
+            await self.command_message(message)
             return
         L.info(f"Got message from {message.author.id}/{message.author}, sending to {len(self.sickos)} sickos")
-        for sicko in self.sickos.values():
-            sicko.keeper.process_message(message)
-            preview = ' / '.join([msg.content for msg in sicko.keeper.get_recent(3, message.author.id)])
-            L.info(f"Last 3/{sicko.keeper.get_count(message.author.id)}/{sicko.keeper.MESSAGE_HISTORY_LEN} messages: {preview}")
+        for s in self.sickos.values():
+            s.keeper.process_message(message)
+            preview = ' / '.join([msg.content for msg in s.keeper.get_recent(3, message.author.id)])
+            L.info(f"Last 3/{s.keeper.get_count(message.author.id)}/{s.keeper.MESSAGE_HISTORY_LEN} messages: {preview}")
         if message.reference:
             # the message might be a reply!
             if isinstance(message.reference.resolved, discord.Message):
