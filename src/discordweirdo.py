@@ -5,6 +5,7 @@ from dataclasses import dataclass
 from typing import Awaitable, Callable, TypeAlias, Union, cast
 
 import discord
+import ollama  # type: ignore
 
 from . import consts, keeper, sicko, templater
 
@@ -151,12 +152,12 @@ class CommandTree:
         
 
 class DiscordWeirdo(discord.Client):
-    def __init__(self, *args, **kwargs) -> None: # type: ignore
+    def __init__(self, *args, ollamaclient: ollama.Client = None, **kwargs) -> None: # type: ignore
         super().__init__(*args, **kwargs)
         self.sickos: dict[str, sicko.Sicko] = {
-            "weirdo": sicko.Sicko(keeper.PeopleKeeper, templater.LIL_WEIRDO),
-            "freak": sicko.Sicko(keeper.ConvoKeeper, templater.LIL_FREAK),
-            "uwu": sicko.Sicko(keeper.ConvoKeeper, templater.LIL_OWO_FREAK),
+            "weirdo": sicko.Sicko(ollamaclient, keeper.PeopleKeeper, templater.LIL_WEIRDO),
+            "freak": sicko.Sicko(ollamaclient, keeper.ConvoKeeper, templater.LIL_FREAK),
+            "uwu": sicko.Sicko(ollamaclient, keeper.ConvoKeeper, templater.LIL_OWO_FREAK),
         }
         self.response_rate: float = consts.DEFAULT_RESPONSE_RATE
         self.current_sicko: str | None = None

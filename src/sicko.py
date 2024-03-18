@@ -13,23 +13,25 @@ class Sicko:
     """Implements a really mean AI.
     
     Args:
+        ollama_client: An Ollama.Client, else the default is used.
         keeper: A Keeper class to initialize, serving as the memory of the AI.
         templater: A Templater, which controls the prompt template, stop 
             tokens, choice of model, and other options.
     """
-    def __init__(self, 
+    def __init__(self,
+                 ollamaclient: ol.Client = None,
                  keeper: Type[Keeper] = ConvoKeeper, 
                  templater: Templater = LIL_WEIRDO):
         L.info("Initializing LC chain...")
         L.info(f"Memory keeper: {keeper}")
         L.info(f"Templater: {templater}")
-        self.llm: ol.Client = ol.Client()
+        self.llm: ol.Client = ol.Client() if ollamaclient is None else ollamaclient
         self.templater: Templater = templater
         self.keeper: Keeper = keeper()
         self.starttok = "[MSG]"
         self.stoptok = "[/MSG]"
         L.info("LC chain initialized! Asking it how it feels to be alive...")
-        # L.info(self.__generate(f"{self.starttok} God: How does it feel to be alive? {self.stoptok}\n{self.starttok} Lil Weirdo:"))
+        L.info(self.__generate(f"{self.starttok} God: How does it feel to be alive? {self.stoptok}\n{self.starttok} Lil Weirdo:"))
 
     def __prompt(self, user: discord.Member | discord.User) -> str:
         messages = '\n'.join(self.keeper.get_ai_ingestible(user.id, self.starttok, self.stoptok))

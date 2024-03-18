@@ -2,6 +2,7 @@ import logging
 import os
 
 import discord
+import ollama  # type: ignore
 from dotenv import load_dotenv
 
 from . import discordweirdo
@@ -14,11 +15,15 @@ def main() -> None:
     logging.getLogger('discord').setLevel(logging.INFO)
     L.info("Loading env...")
     load_dotenv()
+    L.info(os.environ)
 
     L.info("Intializing Discord client...")
     intents = discord.Intents.default()
     intents.message_content = True
-    client = discordweirdo.DiscordWeirdo(intents=intents)
+    ollamaclient = ollama.Client(host=os.environ.get("OLLAMA_HOST"),
+                                 timeout=20.0) # seconds
+    client = discordweirdo.DiscordWeirdo(ollamaclient=ollamaclient,
+                                         intents=intents)
     client.run(os.environ["DISCORD_TOKEN"], log_handler=None)
 
 if __name__ == "__main__":
