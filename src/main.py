@@ -15,7 +15,6 @@ def main() -> None:
     logging.getLogger('discord').setLevel(logging.INFO)
     L.info("Loading env...")
     load_dotenv()
-    L.info(os.environ)
 
     L.info("Intializing Discord client...")
     intents = discord.Intents.default()
