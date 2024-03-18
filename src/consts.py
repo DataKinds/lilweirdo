@@ -9,16 +9,9 @@ SICKO_HELP_MESSAGE = """* **/sicko list**: Lists the available sickos.
 * **/sicko set <name>**: Sets the currently responding sicko to the given named sicko.
 * **/sicko shuffle**: Sets the sickos to shuffle which one responds to a given message"""
 
-RESPONSE_RATE_HELP_MESSAGE = f"* **/responserate <rate>**: Sets the percent of messages the sickos respond to, from 0 to 1. Defaults to {DEFAULT_RESPONSE_RATE}"
-
-HELP_MESSAGE = f"""# What's good?
+HELP_MESSAGE_HEADER = """# What's good?
 This is Lil Weirdo, a bot which talks back. There are many personalities defined within Lil Weirdo, known as its various "sickos". Each sicko is defined by an LLM model, a prompt template, and a unique memory recording scheme. Every message that is sent may be recorded into a sicko's memory. There are a couple of commands defined for your consumption pleasure:
-## Non-LLM commands
-* **/amnesia**: Deletes all of the sickos' memories.
-{SICKO_HELP_MESSAGE}
-{RESPONSE_RATE_HELP_MESSAGE}
-* **/help**: Prints this message.
-## LLM commands
-* **/~cheevosfrom <game>**: What are the achievements from your favorite game?
+"""
 
+HELP_MESSAGE_FOOTER = """
 Lil Weirdo is an open source project, more information can be found at https://github.com/DataKinds/lilweirdo."""

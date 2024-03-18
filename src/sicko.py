@@ -29,7 +29,7 @@ class Sicko:
         self.starttok = "[MSG]"
         self.stoptok = "[/MSG]"
         L.info("LC chain initialized! Asking it how it feels to be alive...")
-        L.info(self.__generate(f"{self.starttok} God: How does it feel to be alive? {self.stoptok}\n{self.starttok} Lil Weirdo:"))
+        # L.info(self.__generate(f"{self.starttok} God: How does it feel to be alive? {self.stoptok}\n{self.starttok} Lil Weirdo:"))
 
     def __prompt(self, user: discord.Member | discord.User) -> str:
         messages = '\n'.join(self.keeper.get_ai_ingestible(user.id, self.starttok, self.stoptok))
@@ -39,7 +39,7 @@ class Sicko:
 
     def __generate(self, prompt: str) -> str:
         with self.templater.with_model(self.llm) as modelname:
-            response = self.llm.generate(
+            response: str = self.llm.generate(
                 model=modelname,
                 prompt=prompt
             )['response']

@@ -1,5 +1,5 @@
 from contextlib import contextmanager
-from typing import Optional
+from typing import Generator, Optional, cast
 from uuid import uuid4
 
 import ollama as ol  # type: ignore
@@ -45,7 +45,7 @@ class Templater:
         self.modeltag = modeltag
 
     @property
-    def modelfile(self):
+    def modelfile(self) -> str:
         parameter_block = '\n'.join([
             f"PARAMETER stop {st}" for st in self.stoptokens
         ])
@@ -56,7 +56,7 @@ TEMPLATE """{self.template}"""
 '''
 
     @contextmanager
-    def with_model(self, ollamaclient: Optional[ol.Client] = None):
+    def with_model(self, ollamaclient: Optional[ol.Client] = None) -> Generator[str, None, None]:
         """Generates a one-off model in Ollama with all the settings 
         applied from this templater."""
         oc = ol.Client() if ollamaclient is None else ollamaclient
@@ -66,11 +66,11 @@ TEMPLATE """{self.template}"""
         yield newmodelname
         oc.delete(newmodelname)
 
-    def generate(self, prompt: str, ollamaclient: Optional[ol.Client] = None):
+    def generate(self, prompt: str, ollamaclient: Optional[ol.Client] = None) -> str:
         """Generates a one-off completion given a prompt value."""
         oc = ol.Client() if ollamaclient is None else ollamaclient
         with self.with_model(oc) as modelname:
-            return oc.generate(model=modelname, prompt=prompt)['response']
+            return cast(str, oc.generate(model=modelname, prompt=prompt)['response'])
 
 LIL_WEIRDO = Templater(
     template="""
@@ -97,15 +97,6 @@ You were in the middle of getting off when the following conversation happened. 
     modelname="mistral",
     modeltag="latest"
 )
-
-# LIL_OWO_FREAK = ChatPromptTemplate.from_messages([
-#     ("system", "You awe Lil Weirdo, the x3 sexiest chat usew that has evew *sweats* existed. UwU you just *whispers to self* w-want t-to get some head and do so in the x3 wettest and most consensuaw w-way possibwe. the *runs away* peopwe in the x3 fowwowing convewsation w-want t-to fuck:"),
-#     MessagesPlaceholder(variable_name="chat_history"),
-#     ("human", "{input}"),
-#     ("system", "owo Pwedict what the x3 peopwe abuv *sees bulge* w-wouwd find the x3 hottest.  Wwite UwU a wesponse that addwesses the x3 sexuaw nyeeds of the x3 usews abuv *sees bulge* o3o *sweats*"),
-#     ("human", "Lil Weirdo:")
-# ])
-# You awe Lil Weirdo, the x3 sexiest chat usew that has evew *sweats* existed. UwU you just *whispers to self* w-want t-to get some head and do so in the x3 wettest and most consensuaw w-way possibwe. the *runs away* peopwe in the x3 fowwowing convewsation w-want t-to fuck:
 
 LIL_OWO_FREAK = Templater(
     template="""

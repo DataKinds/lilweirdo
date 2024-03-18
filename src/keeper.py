@@ -14,11 +14,11 @@ class Keeper(ABC):
     MESSAGE_HISTORY_LEN = 0
 
     @abstractmethod
-    def process_message(self, message: discord.Message):
+    def process_message(self, message: discord.Message) -> None:
         """Ingest a user's message."""
         pass
     @abstractmethod
-    def process_self_message(self, message: discord.Message):
+    def process_self_message(self, message: discord.Message) -> None:
         """Ingest our own message so we can remember what we said."""
         pass
     @abstractmethod
@@ -44,18 +44,18 @@ class ConvoKeeper(Keeper):
     """
     MESSAGE_HISTORY_LEN = 1000
 
-    def __init__(self):
+    def __init__(self) -> None:
         """
         Attributes:
             history -- the last MESSAGE_HISTORY_LEN messages
         """
         self.history: deque[discord.Message] = deque(maxlen=self.MESSAGE_HISTORY_LEN)
 
-    def process_message(self, message: discord.Message):
+    def process_message(self, message: discord.Message) -> None:
         """Ingest a user's message."""
         self.history.append(message)
 
-    def process_self_message(self, message: discord.Message):
+    def process_self_message(self, message: discord.Message) -> None:
         """Ingest our own message so we can remember what we said."""
         self.history.append(message)
 
@@ -81,7 +81,7 @@ class PeopleKeeper(Keeper):
     """
     MESSAGE_HISTORY_LEN = 100
 
-    def __init__(self):
+    def __init__(self) -> None:
         """
         Attributes:
             history -- maps user IDs to a history of messages
@@ -89,11 +89,11 @@ class PeopleKeeper(Keeper):
         self.history: dict[int, deque[discord.Message]] = \
             defaultdict(lambda: deque(maxlen=self.MESSAGE_HISTORY_LEN))
 
-    def process_message(self, message: discord.Message):
+    def process_message(self, message: discord.Message) -> None:
         """Ingest a user's message."""
         self.history[message.author.id].append(message)
         
-    def process_self_message(self, message: discord.Message):
+    def process_self_message(self, message: discord.Message) -> None:
         """Ingest our own message so we can remember what we said."""
         if message.reference:
             if isinstance(message.reference.resolved, discord.Message):
