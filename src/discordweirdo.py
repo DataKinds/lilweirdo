@@ -194,6 +194,11 @@ class DiscordWeirdo(discord.Client):
     async def cmd_help(self, args: str, message: discord.Message) -> bool:
         await message.reply(self.ctree.help())
         return True
+    async def cmd_changeprefix(self, args: str, message: discord.Message) -> bool:
+        sargs = args.strip()
+        self.ctree.prefix = sargs
+        await message.reply(f"Changed command prefix to `{sargs}`.")
+        return True
     async def cmd_amnesia(self, args: str, message: discord.Message) -> bool:
         L.info("Clearing memory...")
         for s in self.sickos.values():
@@ -243,6 +248,8 @@ class DiscordWeirdo(discord.Client):
     def _register_commands(self) -> None:
         """Registers all command functions with our [[self.ctree]]."""
         self.ctree.add("help", [], "Show this help message.", self.cmd_help)
+        self.ctree.add("changeprefix", ["new prefix"], 
+                       lambda: f"Change the command prefix. Currently set to `{self.ctree.prefix}`, defaults to `{consts.DEFAULT_COMMAND_PREFIX}`.", self.cmd_changeprefix)
         self.ctree.add("amnesia", [], "Deletes all of the sickos' memories.", self.cmd_amnesia)
         self.ctree.add("responserate", ["rate"], 
                        lambda: f"Sets the percent of messages the sickos respond to, from 0 to 1. Currently set to {self.response_rate}, defaults to {consts.DEFAULT_RESPONSE_RATE}", 
